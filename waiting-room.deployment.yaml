@@ -1,0 +1,101 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: waitingroom-deploy
+  namespace: waiting-room
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: waitingroom-pod-deployer
+rules:
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [create, get, list, delete, patch]
+- apiGroups: [""]
+  resources: [secrets]
+  verbs: [create, get, delete, patch]
+- apiGroups: [apiextensions.k8s.io]
+  resources: [customresourcedefinitions]
+  verbs: [list]
+- apiGroups: [""]
+  resources: [pods/exec]
+  verbs: [create, list]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: waitingroom-deploy-rb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: waitingroom-pod-deployer
+subjects:
+- kind: ServiceAccount
+  name: waitingroom-deploy
+  namespace: waiting-room
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: waiting-room
+  namespace: waiting-room
+spec:
+  selector:
+    matchLabels:
+      app: waiting-room
+  template:
+    metadata:
+      annotations:
+        # run with sysbox
+        io.kubernetes.cri-o.userns-mode: "auto:size=65536"
+      labels:
+        app: waiting-room
+    spec:
+      serviceAccountName: waitingroom-deploy
+      nodeSelector:
+        # container runs systemd so needs sysbox
+        sysbox-runtime: running
+
+      imagePullSecrets:
+        - name: registry-creds
+
+      # run with sysbox
+      runtimeClassName: sysbox-runc
+
+      containers:
+        - name: waiting-room
+          image: registry.digitalocean.com/damctf-copydown/waiting-room
+          imagePullPolicy: Always
+
+          resources:
+            requests:
+              cpu: 2
+              memory: 1Gi
+            limits:
+              cpu: 3
+              memory: 1.5Gi
+
+          ports:
+            - containerPort: 13337
+              name: the-port
+
+      dnsConfig:
+        nameservers:
+          - 1.1.1.1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: waiting-room
+  namespace: waiting-room
+spec:
+  selector:
+    app: waiting-room
+  ports:
+  - port: 13337
+    protocol: TCP
+    targetPort: the-port
+---
+# tcp ingress forwarding / ingress controller handled in cluster-setup

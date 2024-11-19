@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: 'ubuntu-${ id }'
+  namespace: runners
+  annotations:
+    # run with sysbox
+    io.kubernetes.cri-o.userns-mode: "auto:size=65536"
+spec:
+  nodeSelector:
+    # container runs systemd so needs sysbox
+    sysbox-runtime: running
+
+  imagePullSecrets:
+    - name: registry-creds
+
+  # run with sysbox
+  runtimeClassName: sysbox-runc
+
+  # extra mount confuses terraform
+  automountServiceAccountToken: false
+
+  containers:
+    - name: runner
+      image: registry.digitalocean.com/damctf-copydown/runner-vm
+
+      volumeMounts:
+        - name: runner-creds
+          readOnly: true
+          mountPath: /etc/gitlab-runner/secrets
+      resources:
+        requests:
+          cpu: 250m # 0.25
+          memory: 150Mi
+        limits:
+          cpu: 1
+          memory: 400Mi
+
+  volumes:
+    - name: runner-creds
+      secret:
+        secretName: '${ secret }'
+
+  dnsConfig:
+    nameservers:
+      - 1.1.1.1
