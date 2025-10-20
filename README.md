@@ -9,7 +9,7 @@ to solve a provisioning problem: how to give each connected user their own copy
 of provisioned infrastructure? (in this case, a Gitlab project, runner, and K8S
 pod.)
 
-This uses Terraform to provision a new Kubernetes pod (and any other resources!)
+This uses OpenTofu to provision a new Kubernetes pod (and any other resources!)
 whenever a new user connects to the Waiting Room, and cleans up after the user
 disconnects.
 
@@ -21,14 +21,14 @@ SSH connections on port `13337`
 2. Users log in to user `user` via SSH, which runs
 [`waiting-room.sh`](./container/waiting-room.sh) as their shell on login
 
-3. `waiting-room.sh` runs `terraform apply` on the files under `/provisioning`
-and waits for the created pod to become ready
+3. `waiting-room.sh` runs `tofu apply` on the files under `/provisioning` and
+   waits for the created pod to become ready
 
 4. The waiting user is then `kubectl exec`'d into the new pod, and they can
 happily do whatever they want in there
 
-5. When the connection ends or is dropped, `waiting-room.sh` runs `terraform
-delete` on the created resources to clean up after itself
+5. When the connection ends or is dropped, `waiting-room.sh` runs `tofu delete`
+   on the created resources to clean up after itself
 
 ```mermaid
 sequenceDiagram
@@ -41,7 +41,7 @@ sequenceDiagram
 
     User ->> room: Logs in via SSH
 
-    room -->> Kubernetes: Terraform creates pod, etc
+    room -->> Kubernetes: OpenTofu creates pod, etc
 
     create participant Pod
     Kubernetes --> Pod: #20
@@ -56,7 +56,7 @@ sequenceDiagram
     Pod -x room: Session ends
 
     room -x User: #20
-    room -->> Kubernetes: Terraform deletes pod, etc
+    room -->> Kubernetes: OpenTofu deletes pod, etc
     destroy Pod
     Pod --> Kubernetes: #20
 ```

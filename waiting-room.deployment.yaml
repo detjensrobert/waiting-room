@@ -43,7 +43,7 @@ subjects:
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: Deployment # TODO: this should really be a statefulset!
 metadata:
   name: waiting-room
   namespace: waiting-room

@@ -11,9 +11,9 @@ log_run () {
   systemd-cat -t "chal-setup-$USER_SHA" $*
 }
 
-# destroy if terraform dies or whatever
+# destroy if tofu dies or whatever
 function cleanup {
-  log_run nohup terraform apply -auto-approve \
+  log_run nohup tofu apply -auto-approve \
     -state "/tmp/$USER_SHA.tfstate" \
     -var session_id="$USER_SHA" \
     -var-file setup.tfvars \
@@ -55,7 +55,7 @@ tput sgr0
 cd /provisioning/
 
 export TF_INPUT=0 # disable input
-export TF_PLUGIN_CACHE_DIR=/terraform/ # prepopulated
+export TF_PLUGIN_CACHE_DIR=/tofu/ # prepopulated
 export TF_DATA_DIR="/tmp/tf-$USER_SHA" # store in private-tmp
 mkdir "$TF_DATA_DIR"
 
@@ -64,19 +64,19 @@ export KUBERNETES_SERVICE_HOST=10.245.0.1
 export KUBERNETES_SERVICE_PORT=443
 
 # spin up new runner and project
-log_run terraform init
-log_run terraform plan \
+log_run tofu init
+log_run tofu plan \
   -state "/tmp/$USER_SHA.tfstate" \
   -var session_id="$USER_SHA" \
   -var-file setup.tfvars \
   -out /tmp/$USER_SHA.tfplan &
 spinner
-log_run terraform apply -state "/tmp/$USER_SHA.tfstate" /tmp/$USER_SHA.tfplan &
+log_run tofu apply -state "/tmp/$USER_SHA.tfstate" /tmp/$USER_SHA.tfplan &
 spinner
 
 
 # boot user into it
-POD="$(terraform output -state "/tmp/$USER_SHA.tfstate" -raw pod_name)"
+POD="$(tofu output -state "/tmp/$USER_SHA.tfstate" -raw pod_name)"
 kubectl wait -n runners --for=condition=Ready "pod/$POD" &>/dev/null
 
 echo all set!
