@@ -3,7 +3,7 @@
 
 set -eu # TODO remove x
 
-# use git-style first 7 chars of sha as session id / name for stuff
+# use git-style first 7 chars of sha as a session id and name for stuff
 # add current time to connection info for collision avoidance
 export USER_SHA=$(echo "$SSH_CONNECTION" "$(date +%s)" | sha1sum | head -c 7 )
 
@@ -41,20 +41,18 @@ echo
 echo
 tput setaf 12
 echo "    welcome to the waiting room"
-tput setaf 8
-echo "      (this is out of scope)"
 tput sgr0
 echo
 echo
 echo your session id: "$(tput setaf 9)$USER_SHA$(tput sgr0)"
 echo if things break, include that when talking to admin
 echo
-echo setting up challenge instance...
+echo setting up things...
 tput setaf 8
 echo "(this may take a few minutes)"
 tput sgr0
 
-cd /chal-setup/
+cd /provisioning/
 
 export TF_INPUT=0 # disable input
 export TF_PLUGIN_CACHE_DIR=/terraform/ # prepopulated
