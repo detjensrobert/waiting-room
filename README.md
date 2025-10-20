@@ -60,3 +60,13 @@ sequenceDiagram
     destroy Pod
     Pod --> Kubernetes: #20
 ```
+
+## Deploying your own
+
+<!-- TODO! flesh this out into proper instructions -->
+
+1. add OpenTofu code to stand up whatever services are needed in `provisioning/`
+2. update the example pod template and secret to pass any credentials or information needed by each instance
+3. build the waiting-room image (contains the Tofu)
+4. update `waiting-room.deployment.yaml` with that image and deploy it
+5. update cluster ingress controller config to listen on 13337 for waiting room ssh
